@@ -1,0 +1,8 @@
+telegram:
+  bot_token: 5589990285:AAHrryfcpwPV6eIOGVpRcw0IZIu26kO0Lms
+database:
+  user: postgres
+  password: password
+  host: 127.0.0.1
+  port: 5432
+  database: postgres
