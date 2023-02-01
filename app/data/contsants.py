@@ -25,7 +25,3 @@ MOBILE_USER_AGENTS = [
     'Mozilla/5.0 (iPod; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) '
     'CriOS/102.0.5005.87 Mobile/15E148 Safari/604.1',
 ]
-
-statuses = {x for x in range(100, 600)}
-statuses.remove(200)
-statuses.remove(429)
