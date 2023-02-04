@@ -13,7 +13,11 @@ connection = psycopg2.connect(
     password=settings.database.password
 )
 
-URL = 'http://www.volleymsk.ru/ap/team.php?id=948'
+URL = 'http://www.volleymsk.ru/ap/team.php?id=544'
 page = requests.get(URL, headers=HEADERS)
 soup = BeautifulSoup(page.content, 'html.parser')
-.
+table = soup.find('table')
+table_rows = table.find_all('tr')
+for tr in table_rows:
+    td = tr.find_all('td')
+    print(row.)

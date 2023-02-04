@@ -39,7 +39,8 @@ async def main():
     )
     async with connection_pool.acquire() as connection:
         await connection.fetch(
-            'create table IF NOT EXISTS schedule (date_time timestamp, host text, guest text, location text, foregin key (host) references team (name), foreign key (guest) references team (name));'
+            'create table IF NOT EXISTS schedule (date_time timestamp, host text, guest text, location text, '
+            'foreign key (host) references teams (team), foreign key (guest) references teams (team));'
         )
         await connection.fetch(
             'create unique index IF NOT EXISTS schedule_date_time_host_guest_location_uindex on schedule (date_time, '
