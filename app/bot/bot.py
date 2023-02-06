@@ -3,34 +3,52 @@ import logging
 import warnings
 
 import asyncpg
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, Router
+from aiogram.filters import Text, Command
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
+
 from config import settings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+
 bot = Bot(token=settings.telegram.bot_token)
-dp = Dispatcher(bot)
-
-HELP_COMMAND = """
-/start - start bot
-/get_team_info - get team info
-"""
+dp = Dispatcher()
+router = Router()
 
 
-@dp.message_handler(commands=["start"])
-async def cmd_start(message: types.Message):
-    await message.answer("Hello!")
+@dp.message(Command("get_team_info"))
+async def get_team_info(message: types.Message):
+    kb = [
+        [
+            types.KeyboardButton(text="Получить расписание игр команды"),
+            types.KeyboardButton(text="Получить информацию о команде"),
+        ],
+    ]
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=kb,
+        resize_keyboard=True,
+        input_field_placeholder="Введите название команды"
+    )
+    await message.answer("Введите действие", reply_markup=keyboard)
 
 
-@dp.message_handler(commands=["help"])
-async def help_command(message: types.Message):
-    await message.answer(text=HELP_COMMAND)
-
-
-@dp.message_handler(commands=["get_team_info"])
-async def get_team_info(message: types.Message, conn: asyncpg.Connection):
+@dp.message(Text(text="Получить расписание игр команды", ignore_case=True))
+async def get_team_schedule(message: types.Message, conn: asyncpg.Connection):
     row = await conn.fetch('select * from public.teams where team = $1', 'ОСНОВА')
-    await message.answer(row[0])
+    await message.answer(f'Ваш запрос про команду: {row[0]}')
+
+
+@dp.message(Text(text="Получить информацию о команде", ignore_case=True))
+async def get_team_stat(message: types.Message, conn: asyncpg.Connection):
+    row = await conn.fetch('select * from public.schedule where host = "ОСНОВА" or guest = "ОСНОВА"')
+    await message.answer(f'Ваш запрос про команду: {row[0]}')
+
+
+@router.message(Command(commands=["info"]))
+async def msg(message: types.Message, conn: asyncpg.Connection):
+    row = await conn.fetch('select * from public.teams where team = $1', 'ОСНОВА')
+    await message.answer(f'Ваш запрос про команду: {row[0]}')
 
 
 async def main():

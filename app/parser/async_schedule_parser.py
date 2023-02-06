@@ -24,7 +24,8 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
             }
             async with connection_pool.acquire() as connection:
                 await connection.fetch(
-                    'insert into public.schedule(date_time, host, guest, location) values ($1, $2, $3, $4) on conflict ('
+                    'insert into public.schedule(date_time, host, guest, location) values ($1, $2, $3, '
+                    '$4) on conflict ( '
                     'date_time, host, guest, location) do update set date_time = excluded.date_time',
                     datetime.datetime.fromisoformat(match['date_time']), match['host'], match['guest'], match['location']
                 )
