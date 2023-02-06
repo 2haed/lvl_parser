@@ -6,3 +6,5 @@ database:
   host: 127.0.0.1
   port: 5432
   database: postgres
+calendar:
+  calendar_id: 2664c763687f1077b7b2cca00fd239bf598400f65e539e9ad4c913627b20e3eb@group.calendar.google.com

@@ -4,7 +4,7 @@ import aiohttp
 import asyncpg
 from bs4 import BeautifulSoup
 from config import settings
-from app.data.contsants import HEADERS
+from data.contsants import HEADERS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -40,7 +40,7 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
                     all_teams.append(team)
                 async with connection_pool.acquire() as connection:
                     await connection.fetch(
-                        'insert into public.teams(team, league, team_link, victories, max_victories, points, handicap, '
+                        'insert into public.team_stat(team, league, team_link, victories, max_victories, points, handicap, '
                         'three_zero_three_one, three_two, one_three_zero_three, match_points, match_ratio, balls, '
                         'balls_ratio) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) on conflict ('
                         'team)'
@@ -62,7 +62,7 @@ async def main():
     )
     async with connection_pool.acquire() as connection:
         await connection.fetch(
-            'create table IF NOT EXISTS public.teams (team text primary key, league text, team_link text unique , victories int, '
+            'create table IF NOT EXISTS public.team_stat (team text primary key, league text, team_link text unique , victories int, '
             'max_victories int, points int, handicap text, three_zero_three_one int, three_two int, '
             'one_three_zero_three '
             'int, match_points text, '

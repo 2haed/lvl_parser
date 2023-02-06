@@ -5,7 +5,7 @@ import aiohttp
 import asyncpg
 from bs4 import BeautifulSoup
 from config import settings
-from app.data.contsants import HEADERS
+from data.contsants import HEADERS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -40,7 +40,7 @@ async def main():
     async with connection_pool.acquire() as connection:
         await connection.fetch(
             'create table IF NOT EXISTS schedule (date_time timestamp, host text, guest text, location text, '
-            'foreign key (host) references teams (team), foreign key (guest) references teams (team));'
+            'foreign key (host) references team_stat (team), foreign key (guest) references team_stat (team));'
         )
         await connection.fetch(
             'create unique index IF NOT EXISTS schedule_date_time_host_guest_location_uindex on schedule (date_time, '
