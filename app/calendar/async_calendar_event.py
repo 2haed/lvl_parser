@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import warnings
 
 from google.oauth2 import service_account

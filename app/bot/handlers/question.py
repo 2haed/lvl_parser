@@ -1,15 +1,20 @@
-from app.bot.bot import dp
 from aiogram import Router, types
-from aiogram.filters import Text
+from aiogram.filters import Text, Command
 
-router = Router()
-
-
-@dp.message(Text(text="Получить расписание игр команды", ignore_case=True))
-async def get_team_schedule(message: types.Message):
-    await message.answer("TEST TEAM SCHEDULE")
+from app.bot.handlers.base import router
 
 
-@dp.message(Text(text="Получить информацию о команде", ignore_case=True))
-async def get_team_stat(message: types.Message):
-    await message.answer("TEST TEAM INFO")
+@router.message(Command("get_team_info"))
+async def get_team_info(message: types.Message):
+    kb = [
+        [
+            types.KeyboardButton(text="Получить расписание игр команды"),
+            types.KeyboardButton(text="Получить информацию о команде"),
+        ],
+    ]
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=kb,
+        resize_keyboard=True,
+        input_field_placeholder="Введите название команды"
+    )
+    await message.answer("Введите действие", reply_markup=keyboard)
