@@ -2,8 +2,8 @@ import psycopg2 as psycopg2
 import requests
 from bs4 import BeautifulSoup
 
-from config import settings
-from data.contsants import HEADERS
+from app.config import settings
+from app.parser.data.headers import HEADERS
 
 connection = psycopg2.connect(
     host=settings.database.host,

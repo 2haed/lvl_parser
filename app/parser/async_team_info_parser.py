@@ -3,8 +3,8 @@ import warnings
 import aiohttp
 import asyncpg
 from bs4 import BeautifulSoup
-from config import settings
-from data.contsants import HEADERS
+from app.config import settings
+from app.parser.data.headers import HEADERS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 

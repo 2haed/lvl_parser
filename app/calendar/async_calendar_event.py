@@ -7,7 +7,7 @@ import aiohttp
 from aiogc import events, models, Time
 from googleapiclient.discovery import build
 
-from config import settings
+from app.config import settings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 

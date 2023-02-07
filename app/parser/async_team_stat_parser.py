@@ -3,14 +3,14 @@ import warnings
 import aiohttp
 import asyncpg
 from bs4 import BeautifulSoup
-from config import settings
-from data.contsants import HEADERS
+from app.config import settings
+from app.parser.data.headers import HEADERS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_pool: asyncpg.Pool, headers: dict):
-    async with session.get(URL, headers=headers) as response:
+async def get_page_data(session: aiohttp.ClientSession, url: str, connection_pool: asyncpg.Pool, headers: dict):
+    async with session.get(url, headers=headers) as response:
         soup = BeautifulSoup(await response.text(), 'html.parser')
         row = soup.find_all('td', class_='normaltext')
         all_teams = []
@@ -40,16 +40,16 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
                     all_teams.append(team)
                 async with connection_pool.acquire() as connection:
                     await connection.fetch(
-                        'insert into public.team_stat(team, league, team_link, victories, max_victories, points, handicap, '
-                        'three_zero_three_one, three_two, two_three, one_three_zero_three, match_points, match_ratio, balls, '
-                        'balls_ratio) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, '
-                        '$15) on conflict ( '
-                        'team)'
-                        'do update set team = excluded.team', team['team'], team['league'], team['team_link'], int(team['victories']),
+                        'insert into public.team_stat(team, league, team_link, victories, max_victories, points, '
+                        'handicap, three_zero_three_one, three_two, two_three, '
+                        'one_three_zero_three, match_points, match_ratio, balls,'
+                        'balls_ratio) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, '
+                        '$11, $12, $13, $14, $15) on conflict (team) do update set '
+                        'team = excluded.team', team['team'], team['league'], team['team_link'], int(team['victories']),
                         int(team['max_victories']), int(team['points']), team['handicap'],
                         int(team['three_zero_three_one']),
-                        int(team['three_two']), int(team['two_three']), int(team['one_three_zero_three']), team['match_points'],
-                        team['match_ratio'],
+                        int(team['three_two']), int(team['two_three']),
+                        int(team['one_three_zero_three']), team['match_points'], team['match_ratio'],
                         team['balls'], team['balls_ratio']
                     )
 
@@ -63,7 +63,8 @@ async def main():
     )
     async with connection_pool.acquire() as connection:
         await connection.fetch(
-            'create table IF NOT EXISTS public.team_stat (team_id serial not null , team text not null, league text, team_link text not null , victories int, '
+            'create table IF NOT EXISTS public.team_stat (team_id serial not null , team text not null, league text, '
+            'team_link text not null , victories int,'
             'max_victories int, points int, handicap text, three_zero_three_one int, three_two int, two_three int,'
             'one_three_zero_three '
             'int, match_points text, '
@@ -71,8 +72,8 @@ async def main():
     async with aiohttp.ClientSession() as session:
         tasks = []
         for page_num in range(1367, 1401):
-            URL = f'http://www.volleymsk.ru/ap/trntable.php?trn={page_num}'
-            tasks.append(asyncio.create_task(get_page_data(session, URL, connection_pool, HEADERS)))
+            url = f'http://www.volleymsk.ru/ap/trntable.php?trn={page_num}'
+            tasks.append(asyncio.create_task(get_page_data(session, url, connection_pool, HEADERS)))
         await asyncio.gather(*tasks)
 
 
