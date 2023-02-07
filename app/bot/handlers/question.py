@@ -2,7 +2,7 @@ from aiogram import Router, types, F
 from aiogram.filters import Command
 from asyncpg import Connection
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
+from aiogram.utils.markdown import hlink, hbold, bold
 from app.bot.callback_data.callbacks import TeamData, LeagueData, CommandData
 
 router = Router()
@@ -48,13 +48,12 @@ async def get_team_info(call: types.CallbackQuery, callback_data: TeamData, conn
     dict_data = dict(
         await conn.fetchrow('select * from team_stat where team_id = $1', int(callback_data.team_id)))
     new_dict = {
-        'Команда': dict_data['team'],
-        'Ссылка на команду': dict_data['team_link'],
-        'Лига': dict_data['league'],
-        'Победы': dict_data['victories'],
+        'Команда': hlink(dict_data['team'], dict_data['team_link']),
+        'Лига': hbold(dict_data['league']),
+        'Победы': hbold(dict_data['victories']),
         'Максимальное количество побед': dict_data['max_victories'],
-        'Очки': dict_data['points'],
-        'Гандикап: победы/очки': dict_data['handicap'],
+        'Очки': hbold(dict_data['points']),
+        'Гандикап: победы/очки': (dict_data['handicap']),
         'Игры 3-0/3-1': dict_data['three_zero_three_one'],
         'Игры 3-2': dict_data['three_two'],
         'Игры 2-3': dict_data['two_three'],
@@ -80,17 +79,32 @@ async def get_team_info(call: types.CallbackQuery, callback_data: TeamData, conn
 @router.callback_query(CommandData.filter(F.cmd == 'schedule'))
 async def get_league_teams(call: types.CallbackQuery, callback_data: CommandData, conn: Connection):
     game_data = []
-    for match in await conn.fetch('select start_time, end_time, host, guest, location from schedule right join team_stat on '
-                                  'team_stat.team = schedule.host or '
-                                  'team_stat.team = schedule.guest where team_id = $1 or team_id = $1 ',
+    for match in await conn.fetch('select start_time, end_time, location, host.team, host.team_link, guest.team, '
+                                  'guest.team_link from schedule as s '
+                                  'join team_stat as host on s.host = host.team '
+                                  'join team_stat as guest on s.guest = guest.team '
+                                  'where guest.team_id = $1 or host.team_id = $1;',
                                   int(callback_data.team_id)):
         dictio = {
-            'Начало': match[0],
-            'Конец': match[1],
-            'Хозяева': match[2],
-            'Гости': match[3],
-            'Место проведения': match[4]
+            'Начало': match[0].strftime("%b-%d %H:%M"),
+            'Конец': match[1].strftime("%b-%d %H:%M"),
+            'Хозяева': hlink(match[3], match[4]),
+            'Гости': hlink(match[5], match[6]),
+            'Место проведения': hlink(match[2], f'https://yandex.ru/maps/?text={match[2]}')
         }
         game_data.append('\n'.join(f'{key}: {val}' for key, val in dictio.items()))
     games_data = f'\n{30*"-"}\n'.join(game for game in game_data)
     await call.message.answer(text=f'Расписание матчей:\n{games_data}')
+
+
+# @router.callback_query(CommandData.filter(F.cmd == 'mem'))
+# async def get_league_teams(call: types.CallbackQuery, callback_data: CommandData, conn: Connection):
+#     res = await conn.fetch('select player_id, player, position, birthday from player_stat where team_id = $1',
+#                            int(callback_data.team_id))
+#     builder = InlineKeyboardBuilder()
+#     for player in res:
+#         builder.add(types.InlineKeyboardButton(
+#             text=player[1],
+#             callback_data=PlayerData(player_id=int(player[0])).pack()))
+#     builder.adjust(3)
+#     await call.message.answer(text='Выберите игрока', reply_markup=builder.as_markup(resize_keyboard=True))

@@ -15,6 +15,3 @@ class CommandData(CallbackData, prefix="cmd_"):
     team_name: str = None
     team_id: int
 
-
-class CalendarData(CallbackData, prefix='c'):
-    match: int

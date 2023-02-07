@@ -16,9 +16,9 @@ async def cmd_start(message: types.Message):
     logger.info("User {user} start conversation with bot", user=message.from_user.id)
     await message.answer(
         (
-            "Hello, {user}.\n"
-            "Send /help if you want to read my commands list "
-            "My source code: {source_url}"
+            "Привет, {user}.\n"
+            "Жми /help если хочешь ознакомиться со списком команд.\n"
+            "Это open source проект, вот ссылка: {source_url}"
         ).format(
             user=hbold(message.from_user.full_name),
             source_url=hlink("GitHub", "https://github.com/2haed/lvl_parser"),
@@ -33,7 +33,7 @@ async def cmd_help(message: types.Message):
             "Список команд:\n"
             "/help - Показывает этот список\n"
             "/start - Начать диалог с ботом\n"
-            "/get_leagues - Получить все лиги в любительской волейбольной лиги\n"
-            "/get_teams - Получить команды из любительской волейбольной лиги\n"
+            "/leagues - Получить все лиги в любительской волейбольной лиги\n"
+            "/teams - Получить команды из любительской волейбольной лиги\n"
         )
     )
