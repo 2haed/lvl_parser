@@ -2,32 +2,27 @@ import asyncio
 import logging
 import warnings
 
+import asyncpg
 from aiogram import Dispatcher, Bot
 from loguru import logger
 
-from app.bot.filters.answers import router
+from app.bot.handlers import router
+from app.bot.middleware.database import DatabaseMiddleware
 from config import settings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-# @router.message(Command(commands=["info"]))
-# async def msg(message: types.Message, conn: asyncpg.Connection):
-#     row = await conn.fetch('select * from public.teams where team = $1', 'ОСНОВА')
-#     await message.answer(f'Ваш запрос про команду: {row[0]}')
-
-
-# conn = await asyncpg.connect(
-#     host=settings.database.host,
-#     database=settings.database.database,
-#     user=settings.database.user,
-#     password=settings.database.password
-# )
-# conn.close()
-
-def register_middlewares(dp: Dispatcher) -> None:
+async def register_middlewares(dp: Dispatcher) -> None:
     # Add middlewares if needed
-    pass
+    pool = await asyncpg.create_pool(
+        user=settings.database.user,
+        password=settings.database.password,
+        database=settings.database.database,
+        host=settings.database.host,
+        port=settings.database.port
+    )
+    dp.update.middleware(DatabaseMiddleware(pool))
 
 
 def register_handlers(dp: Dispatcher) -> None:
@@ -41,10 +36,9 @@ async def main() -> None:
     )
     logger.info("Starting bot")
 
-    bot = Bot(token=settings.telegram.token, parse_mode="HTML")
+    bot = Bot(token=settings.telegram.bot_token, parse_mode="HTML")
     dp = Dispatcher()
-
-    register_middlewares(dp)
+    await register_middlewares(dp)
     register_handlers(dp)
 
     try:
@@ -55,7 +49,7 @@ async def main() -> None:
         logger.info("Bot stopped")
 
 
-if "__name__" == "__main__":
+if __name__ == "__main__":
     try:
         asyncio.run(main())
     except SystemExit:

@@ -24,10 +24,10 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
             }
             async with connection_pool.acquire() as connection:
                 await connection.fetch(
-                    'insert into public.schedule(date_time, host, guest, location) values ($1, $2, $3, '
-                    '$4) on conflict ( '
-                    'date_time, host, guest, location) do update set date_time = excluded.date_time',
-                    datetime.datetime.fromisoformat(match['date_time']), match['host'], match['guest'], match['location']
+                    'insert into public.schedule(start_time, end_time, host, guest, location) values ($1, $2, $3, '
+                    '$4, $5) on conflict ( '
+                    'start_time, end_time, host, guest, location) do update set start_time = excluded.start_time',
+                    datetime.datetime.fromisoformat(match['date_time']), datetime.datetime.fromisoformat(match['date_time']) + datetime.timedelta(hours=2), match['host'], match['guest'], match['location']
                 )
 
 
@@ -40,11 +40,11 @@ async def main():
     )
     async with connection_pool.acquire() as connection:
         await connection.fetch(
-            'create table IF NOT EXISTS schedule (date_time timestamp, host text, guest text, location text, '
+            'create table IF NOT EXISTS schedule (start_time timestamp, end_time timestamp, host text, guest text, location text, '
             'foreign key (host) references team_stat (team), foreign key (guest) references team_stat (team));'
         )
         await connection.fetch(
-            'create unique index IF NOT EXISTS schedule_date_time_host_guest_location_uindex on schedule (date_time, '
+            'create unique index IF NOT EXISTS schedule_date_time_host_guest_location_uindex on schedule (start_time, end_time, '
             'host, guest, location); '
         )
     async with aiohttp.ClientSession() as session:

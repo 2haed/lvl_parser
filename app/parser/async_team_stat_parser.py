@@ -41,13 +41,14 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
                 async with connection_pool.acquire() as connection:
                     await connection.fetch(
                         'insert into public.team_stat(team, league, team_link, victories, max_victories, points, handicap, '
-                        'three_zero_three_one, three_two, one_three_zero_three, match_points, match_ratio, balls, '
-                        'balls_ratio) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) on conflict ('
+                        'three_zero_three_one, three_two, two_three, one_three_zero_three, match_points, match_ratio, balls, '
+                        'balls_ratio) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, '
+                        '$15) on conflict ( '
                         'team)'
                         'do update set team = excluded.team', team['team'], team['league'], team['team_link'], int(team['victories']),
                         int(team['max_victories']), int(team['points']), team['handicap'],
                         int(team['three_zero_three_one']),
-                        int(team['three_two']), int(team['one_three_zero_three']), team['match_points'],
+                        int(team['three_two']), int(team['two_three']), int(team['one_three_zero_three']), team['match_points'],
                         team['match_ratio'],
                         team['balls'], team['balls_ratio']
                     )
@@ -62,11 +63,11 @@ async def main():
     )
     async with connection_pool.acquire() as connection:
         await connection.fetch(
-            'create table IF NOT EXISTS public.team_stat (team text primary key, league text, team_link text unique , victories int, '
-            'max_victories int, points int, handicap text, three_zero_three_one int, three_two int, '
+            'create table IF NOT EXISTS public.team_stat (team_id serial not null , team text not null, league text, team_link text not null , victories int, '
+            'max_victories int, points int, handicap text, three_zero_three_one int, three_two int, two_three int,'
             'one_three_zero_three '
             'int, match_points text, '
-            'match_ratio text, balls text, balls_ratio text);')
+            'match_ratio text, balls text, balls_ratio text, primary key (team));')
     async with aiohttp.ClientSession() as session:
         tasks = []
         for page_num in range(1367, 1401):
