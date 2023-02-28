@@ -1,64 +1,35 @@
-import asyncio
-import warnings
-import aiohttp
-import asyncpg
+import re
+
+import psycopg2 as psycopg2
+import requests
 from bs4 import BeautifulSoup
+
 from config import settings
 from data.contsants import HEADERS
 
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-
-async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_pool: asyncpg.Pool, headers: dict):
-    async with session.get(URL, headers=headers) as response:
-        soup = BeautifulSoup(await response.text(), 'html.parser')
-        f_table = soup.find_all('table')
-        s_table = f_table.find('table')
-        table_rows = table.find_all('tr')
-        print(table_rows)
-        trs = table_rows.find_all('td')
-        team = {
-            'team': table_rows[0].text,
-            'link': table_rows[1].text,
-            'summary': table_rows[2].text,
-            'contact_person': table_rows[4].text,
-            'nickname': table_rows[5].text,
-            'metro_station': table_rows[8].text,
-            # 'time': f'{table_rows[9].text}-{table_rows[10].text}',
-        }
-        print(table_rows)
-        async with connection_pool.acquire() as connection:
-            await connection.fetch(
-                'insert into public.team_info(team, link, summary, contact_person, nickname, metro_station) '
-                'values ($1, $2, $3, $4, $5, $6) on conflict (team) do update set team = excluded.team',
-                team['team'], team['link'], team['summary'], team['contact_person'], team['nickname'],
-                team['metro_station']
-            )
-
-
-async def main():
-    connection_pool = await asyncpg.create_pool(
-        host=settings.database.host,
-        database=settings.database.database,
-        user=settings.database.user,
-        password=settings.database.password
-    )
-    async with connection_pool.acquire() as connection:
-        await connection.fetch(
-            'create table IF NOT EXISTS team_info (team text primary key, link text, summary text, contact_person text, '
-            'nickname text, metro_station text,'
-            'foreign key (team) references team_stat (team));'
-        )
-        row = await connection.fetch('select team_link from team_stat')
-    async with aiohttp.ClientSession() as session:
-        tasks = []
-        for link in row:
-            print(link[0])
-            tasks.append(
-                get_page_data(session, f'{link[0]}', connection_pool, HEADERS))
-        await asyncio.gather(*tasks)
-
-
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+URL = 'http://www.volleymsk.ru/ap/members.php?id=7548'
+lastURL = 'http://www.volleymsk.ru/ap/members.php?id=7983'
+page = requests.get(lastURL, headers=HEADERS)
+soup = BeautifulSoup(page.content, 'html.parser')
+tables = soup.find_all('table')[4]
+table = tables.find_all('table')[7]
+info = (' '.join(table.text.split()).split('Игрок'))
+team_info = info[0]
+players = info[2:]
+nums = re.findall(r'\b\d+\b', team_info)
+inf = {
+    'Команда': ' '.join(team_info.split(':')[1].split()[:-1]),
+    'Рост': nums[-3],
+    'Возраст': f'{nums[-2]}.{nums[-1]}'
+}
+print(players)
+for i in players:
+    player = {
+        'Команда': ' '.join(team_info.split(':')[1].split()[:-1]),
+        'ФИО': ' '.join(i.split(':')[1].split()[:-1]),
+        'Рост': i.split(':')[2].split()[0],
+        'Мастерство': re.findall(r'[А-Я][а-я]*', i.split(':')[-2])[0] if i.count(':') == 4 else i.split(':')[-1],
+        'Год рождения': i.split(':')[-1].strip() if i.count(':') == 4 else None
+    }
+    print(player)
+print(inf)
