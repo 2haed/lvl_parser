@@ -8,7 +8,7 @@ from loguru import logger
 
 from app.bot.handlers import router
 from app.bot.middleware.database import DatabaseMiddleware
-from config import settings
+from app.config import settings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 

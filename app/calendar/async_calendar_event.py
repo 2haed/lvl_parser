@@ -1,13 +1,14 @@
 import asyncio
 import warnings
 
+import dramatiq as dramatiq
 from google.oauth2 import service_account
 import aiohttp
 
 from aiogc import events, models, Time
 from googleapiclient.discovery import build
 
-from config import settings
+from app.config import settings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -22,6 +23,7 @@ date_time_start = Time('2023-02-06 21:00:00')
 date_time_end = Time('2023-02-06 23:00:00')
 
 
+@dramatiq.actor
 async def main():
     async with aiohttp.ClientSession() as session:
         event = models.Event(

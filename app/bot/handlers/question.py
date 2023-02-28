@@ -1,9 +1,12 @@
 from aiogram import Router, types, F
 from aiogram.filters import Command
+from aiogram.types import ReplyKeyboardRemove
 from asyncpg import Connection
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.utils.markdown import hlink, hbold, bold
+from aiogram.utils.markdown import hlink, hbold
+from app.config import settings
 from app.bot.callback_data.callbacks import TeamData, LeagueData, CommandData
+from app.calendar.calendar_client import GoogleCalendar
 
 router = Router()
 
@@ -77,7 +80,7 @@ async def get_team_info(call: types.CallbackQuery, callback_data: TeamData, conn
 
 
 @router.callback_query(CommandData.filter(F.cmd == 'schedule'))
-async def get_league_teams(call: types.CallbackQuery, callback_data: CommandData, conn: Connection):
+async def get_schedule(call: types.CallbackQuery, callback_data: CommandData, conn: Connection):
     game_data = []
     for match in await conn.fetch('select start_time, end_time, location, host.team, host.team_link, guest.team, '
                                   'guest.team_link from schedule as s '
@@ -93,8 +96,42 @@ async def get_league_teams(call: types.CallbackQuery, callback_data: CommandData
             'Место проведения': hlink(match[2], f'https://yandex.ru/maps/?text={match[2]}')
         }
         game_data.append('\n'.join(f'{key}: {val}' for key, val in dictio.items()))
-    games_data = f'\n{30*"-"}\n'.join(game for game in game_data)
-    await call.message.answer(text=f'Расписание матчей:\n{games_data}')
+    games_data = f'\n{30 * "-"}\n'.join(game for game in game_data)
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(text='Добавить все игры в календарь',
+                                           callback_data=CommandData(team_id=int(callback_data.team_id),
+                                                                     cmd='add_all').pack()
+                                           ))
+    builder.adjust(1)
+    await call.message.answer(text=f'Расписание матчей:\n{games_data}',
+                              reply_markup=builder.as_markup(resize_keyboard=True))
+
+
+@router.callback_query(CommandData.filter(F.cmd == 'add_all'))
+async def insert_events(call: types.CallbackQuery, callback_data: CommandData, conn: Connection):
+    obj = GoogleCalendar()
+    for match in await conn.fetch('select start_time, end_time, location, host.team, host.team_link, guest.team, '
+                                  'guest.team_link from schedule as s '
+                                  'join team_stat as host on s.host = host.team '
+                                  'join team_stat as guest on s.guest = guest.team '
+                                  'where guest.team_id = $1 or host.team_id = $1;',
+                                  int(callback_data.team_id)):
+        event = {
+            'summary': f'{match[3]} против {match[5]}',
+            'location': f'{match[2]}',
+            'description': f'Игра в любительской волейбольной лиге',
+            'start': {
+                'dateTime': f'{match[0].isoformat()}',
+                'timeZone': 'Europe/Moscow',
+            },
+            'end': {
+                'dateTime': f'{match[1].isoformat()}',
+                'timeZone': 'Europe/Moscow'
+            }
+        }
+        obj.add_calendar(settings.calendar.calendar_id)
+        obj.add_event(calendar_id=settings.calendar.calendar_id, body=event)
+    await call.message.answer(text=f'Календарь обновлен')
 
 
 # @router.callback_query(CommandData.filter(F.cmd == 'mem'))

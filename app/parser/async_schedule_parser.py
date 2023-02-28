@@ -4,14 +4,14 @@ import warnings
 import aiohttp
 import asyncpg
 from bs4 import BeautifulSoup
-from config import settings
-from data.contsants import HEADERS
+from app.config import settings
+from app.parser.data.headers import HEADERS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_pool: asyncpg.Pool, headers: dict):
-    async with session.get(URL, headers=headers) as response:
+async def get_page_data(session: aiohttp.ClientSession, url: str, connection_pool: asyncpg.Pool, headers: dict):
+    async with session.get(url, headers=headers) as response:
         soup = BeautifulSoup(await response.text(), 'html.parser')
         table = soup.find('table', id='rasp')
         for tr in table.find_all('tr')[1:]:
@@ -27,7 +27,9 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
                     'insert into public.schedule(start_time, end_time, host, guest, location) values ($1, $2, $3, '
                     '$4, $5) on conflict ( '
                     'start_time, end_time, host, guest, location) do update set start_time = excluded.start_time',
-                    datetime.datetime.fromisoformat(match['date_time']), datetime.datetime.fromisoformat(match['date_time']) + datetime.timedelta(hours=2), match['host'], match['guest'], match['location']
+                    datetime.datetime.fromisoformat(match['date_time']),
+                    datetime.datetime.fromisoformat(match['date_time']) + datetime.timedelta(hours=2),
+                    match['host'], match['guest'], match['location']
                 )
 
 
@@ -40,12 +42,14 @@ async def main():
     )
     async with connection_pool.acquire() as connection:
         await connection.fetch(
-            'create table IF NOT EXISTS schedule (start_time timestamp, end_time timestamp, host text, guest text, location text, '
-            'foreign key (host) references team_stat (team), foreign key (guest) references team_stat (team));'
+            'create table IF NOT EXISTS schedule (start_time timestamp, '
+            'end_time timestamp, host text, guest text, location text, '
+            'foreign key (host) references team_stat (team), foreign key '
+            '(guest) references team_stat (team));'
         )
         await connection.fetch(
-            'create unique index IF NOT EXISTS schedule_date_time_host_guest_location_uindex on schedule (start_time, end_time, '
-            'host, guest, location); '
+            'create unique index IF NOT EXISTS schedule_date_time_host_guest_location_uindex '
+            'on schedule (start_time, end_time, host, guest, location); '
         )
     async with aiohttp.ClientSession() as session:
         tasks = []

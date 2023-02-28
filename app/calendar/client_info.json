@@ -1,0 +1,13 @@
+{
+  "installed": {
+    "client_id": "87610966501-c5dt3ccbuaa2qhjoh7bu9tjq38moa1nq.apps.googleusercontent.com",
+    "project_id": "lvlparser",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_secret": "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",
+    "redirect_uris": [
+      "http://localhost"
+    ]
+  }
+}
