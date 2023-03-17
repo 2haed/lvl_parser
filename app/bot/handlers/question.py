@@ -24,7 +24,7 @@ async def get_leagues(message: types.Message, conn: Connection):
 
 @router.callback_query(LeagueData.filter())
 async def get_league_teams(call: types.CallbackQuery, callback_data: LeagueData, conn: Connection):
-    res = await conn.fetch('select team_id, team from team_stat where league = $1',
+    res = await conn.fetch('select team_id, team from team_stat where league = $1 order by 2',
                            callback_data.league_name)
     builder = InlineKeyboardBuilder()
     for league in res:
@@ -36,7 +36,7 @@ async def get_league_teams(call: types.CallbackQuery, callback_data: LeagueData,
 
 @router.message(Command("teams"))
 async def get_whole_team_list(message: types.Message, conn: Connection):
-    res = await conn.fetch("select team_id, team from team_stat")
+    res = await conn.fetch("select team_id, team from team_stat order by 2")
     builder = InlineKeyboardBuilder()
     for team in res:
         builder.add(types.InlineKeyboardButton(
@@ -98,7 +98,7 @@ async def get_schedule(call: types.CallbackQuery, callback_data: CommandData, co
         game_data.append('\n'.join(f'{key}: {val}' for key, val in dictio.items()))
     games_data = f'\n{30 * "-"}\n'.join(game for game in game_data)
     builder = InlineKeyboardBuilder()
-    builder.add(types.InlineKeyboardButton(text='Добавить все игры в календарь',
+    builder.add(types.InlineKeyboardButton(text='Добавить игры в календарь',
                                            callback_data=CommandData(team_id=int(callback_data.team_id),
                                                                      cmd='add_all').pack()
                                            ))
@@ -131,17 +131,16 @@ async def insert_events(call: types.CallbackQuery, callback_data: CommandData, c
         }
         obj.add_calendar(settings.calendar.calendar_id)
         obj.add_event(calendar_id=settings.calendar.calendar_id, body=event)
-    await call.message.answer(text=f'Календарь обновлен')
+    await call.message.answer(text=f'Календарь обновлен!')
 
 
-# @router.callback_query(CommandData.filter(F.cmd == 'mem'))
-# async def get_league_teams(call: types.CallbackQuery, callback_data: CommandData, conn: Connection):
-#     res = await conn.fetch('select player_id, player, position, birthday from player_stat where team_id = $1',
-#                            int(callback_data.team_id))
-#     builder = InlineKeyboardBuilder()
-#     for player in res:
-#         builder.add(types.InlineKeyboardButton(
-#             text=player[1],
-#             callback_data=PlayerData(player_id=int(player[0])).pack()))
-#     builder.adjust(3)
-#     await call.message.answer(text='Выберите игрока', reply_markup=builder.as_markup(resize_keyboard=True))
+@router.callback_query(CommandData.filter(F.cmd == 'mem'))
+async def get_league_teams(call: types.CallbackQuery, callback_data: CommandData, conn: Connection):
+    res = await conn.fetch('select name, height, skill_level, birth_year from players join team_stat ts on '
+                           'players.team = ts.team where ts.team_id = $1',
+                           int(callback_data.team_id))
+    if 'NULL' not in ' '.join(res[0]):
+        players_data = f'\n{30 * "-"}\n'.join(f'Имя: {game[0]}\nРост: {game[1]}\nМастерство: {game[2]}\nГод рождения: {game[3]}' for game in res)
+    else:
+        players_data = f'\n{30 * "-"}\n'.join(f'Имя: {game[0]}\nРост: {game[1]}\nМастерство: {game[2]}' for game in res)
+    await call.message.answer(text=f'Состав команды:\n{players_data}')

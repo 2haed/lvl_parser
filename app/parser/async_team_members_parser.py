@@ -1,13 +1,18 @@
 import asyncio
+import copy
+import logging
 import re
 import warnings
 import aiohttp
 import asyncpg
 from bs4 import BeautifulSoup
-from config import settings
-from data.contsants import HEADERS
+from app.config import settings
+from app.parser.data.headers import HEADERS
+from app.parser.data.headers import MOBILE_USER_AGENTS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+logging.basicConfig(filename='data/errors.log', format='%(asctime)s| %(message)s', datefmt='%m-%d-%Y %I:%M:%S',
+                    level=logging.ERROR, encoding='UTF-8')
 
 
 async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_pool: asyncpg.Pool, headers: dict):
@@ -43,9 +48,8 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
                         player['birth_year'],
                     )
         except Exception as ex:
-            print(ex)
-            print()
-            print(URL)
+            logging.error(ex)
+            print(URL, ex)
 
 
 async def main():
@@ -62,11 +66,14 @@ async def main():
             'foreign key (team) references team_stat (team));'
         )
         row = await connection.fetch('select team_link from team_stat')
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(limit=50)
+    async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []
-        for page_num in range(7548, 8133):
+        for index, page_num in enumerate(range(7548, 8133)):
             URL = f'http://www.volleymsk.ru/ap/members.php?id={page_num}'
-            tasks.append(asyncio.create_task(get_page_data(session, URL, connection_pool, HEADERS)))
+            new_headers = copy.deepcopy(HEADERS)
+            new_headers['user-agent'] = MOBILE_USER_AGENTS[index % 10]
+            tasks.append(asyncio.create_task(get_page_data(session, URL, connection_pool, new_headers)))
         await asyncio.gather(*tasks)
 
 
