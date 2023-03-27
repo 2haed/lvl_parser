@@ -4,8 +4,9 @@ import psycopg2 as psycopg2
 import requests
 from bs4 import BeautifulSoup
 
-from config import settings
-from data.contsants import HEADERS
+from app.config import settings
+from app.parser.data.headers import HEADERS
+from app.parser.data.headers import MOBILE_USER_AGENTS
 
 URL = 'http://www.volleymsk.ru/ap/members.php?id=7548'
 lastURL = 'http://www.volleymsk.ru/ap/members.php?id=7983'
@@ -32,4 +33,6 @@ for i in players:
         'Год рождения': i.split(':')[-1].strip() if i.count(':') == 4 else None
     }
     print(player)
-print(inf)
+for k, v in inf.items():
+    print(k, ':', type(v))
+print(float(inf['Возраст']))

@@ -2,6 +2,7 @@ import asyncio
 import copy
 import logging
 import re
+import time
 import warnings
 import aiohttp
 import asyncpg
@@ -26,9 +27,9 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
             players = info[2:]
             nums = re.findall(r'\b\d+\b', team_info)
             inf = {
-                'Команда': ' '.join(team_info.split(':')[1].split()[:-1]),
-                'Рост': nums[-3],
-                'Возраст': f'{nums[-2]}.{nums[-1]}'
+                'team': ' '.join(team_info.split(':')[1].split()[:-1]),
+                'avg_height': nums[-3],
+                'avg_age': f'{nums[-2]}.{nums[-1]}'
             }
             for i in players:
                 player = {
@@ -45,11 +46,17 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
                         'insert into public.players(team, name, height, skill_level, birth_year) '
                         'values ($1, $2, $3, $4, $5) on conflict (name) do update set name = excluded.name',
                         player['team'], player['name'], player['height'], player['skill_level'],
-                        player['birth_year'],
+                        player['birth_year']
                     )
+                # async with connection_pool.acquire() as connection:
+                #     await connection.fetch(
+                #         'insert into team_stat (avg_height, avg_age) values ($1, $2) where team',
+                #         inf['avg_height'], inf['avg_age']
+                #     )
+
         except Exception as ex:
             logging.error(ex)
-            print(URL, ex)
+            print(ex)
 
 
 async def main():
@@ -65,7 +72,11 @@ async def main():
             'skill_level text, birth_year text,'
             'foreign key (team) references team_stat (team));'
         )
-        row = await connection.fetch('select team_link from team_stat')
+    async with connection_pool.acquire() as connection:
+        await connection.fetch(
+            'alter table team_stat add column if not exists '
+            'avg_height int, add column if not exists avg_age decimal(8,2);'
+        )
     connector = aiohttp.TCPConnector(limit=50)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []

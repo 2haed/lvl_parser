@@ -61,7 +61,6 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
                         )
         except Exception as ex:
             logging.error(ex)
-            print(URL, ex)
 
 
 async def main():

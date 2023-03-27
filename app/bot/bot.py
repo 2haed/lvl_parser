@@ -14,7 +14,6 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 async def register_middlewares(dp: Dispatcher) -> None:
-    # Add middlewares if needed
     pool = await asyncpg.create_pool(
         user=settings.database.user,
         password=settings.database.password,
