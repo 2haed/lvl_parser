@@ -1,6 +1,5 @@
 from aiogram import Router, types, F
 from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardRemove
 from asyncpg import Connection
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hlink, hbold
@@ -53,9 +52,11 @@ async def get_team_info(call: types.CallbackQuery, callback_data: TeamData, conn
     new_dict = {
         'Команда': hlink(dict_data['team'], dict_data['team_link']),
         'Лига': hbold(dict_data['league']),
+        'Средний рост': hbold(str(dict_data['avg_height']) + ' см'),
+        'Средний возраст': hbold(str(dict_data['avg_age']) + ' лет'),
         'Победы': hbold(dict_data['victories']),
-        'Максимальное количество побед': dict_data['max_victories'],
         'Очки': hbold(dict_data['points']),
+        'Максимальное количество побед': dict_data['max_victories'],
         'Гандикап: победы/очки': (dict_data['handicap']),
         'Игры 3-0/3-1': dict_data['three_zero_three_one'],
         'Игры 3-2': dict_data['three_two'],
@@ -76,7 +77,8 @@ async def get_team_info(call: types.CallbackQuery, callback_data: TeamData, conn
         callback_data=CommandData(team_id=int(dict_data['team_id']), cmd='schedule').pack()
     ))
     builder.adjust(1)
-    await call.message.answer(f"Статистика команды:\n{team_data}", reply_markup=builder.as_markup(resize_keyboard=True))
+    await call.message.answer(f"Статистика команды:"
+                              f"\n{team_data}", reply_markup=builder.as_markup(resize_keyboard=True))
 
 
 @router.callback_query(CommandData.filter(F.cmd == 'schedule'))
@@ -139,8 +141,14 @@ async def get_league_teams(call: types.CallbackQuery, callback_data: CommandData
     res = await conn.fetch('select name, height, skill_level, birth_year from players join team_stat ts on '
                            'players.team = ts.team where ts.team_id = $1',
                            int(callback_data.team_id))
+
     if 'NULL' not in ' '.join(res[0]):
-        players_data = f'\n{30 * "-"}\n'.join(f'Имя: {game[0]}\nРост: {game[1]}\nМастерство: {game[2]}\nГод рождения: {game[3]}' for game in res)
+        players_data = f'\n{30 * "-"}\n'.join(
+            f'Имя: {hbold(game[0])}\nРост: {hbold(game[1])}'
+            f'\nМастерство: {hbold("КМС" if game[2] == "К" else game[2])}\nГод рождения: {hbold(game[3])}'
+            for game in res)
     else:
-        players_data = f'\n{30 * "-"}\n'.join(f'Имя: {game[0]}\nРост: {game[1]}\nМастерство: {game[2]}' for game in res)
+        players_data = f'\n{30 * "-"}\n'.join(
+            f'Имя: {hbold(game[0])}\nРост: {hbold(game[1])}\nМастерство: {hbold("КМС" if game[2] == "К" else game[2])}'
+            for game in res)
     await call.message.answer(text=f'Состав команды:\n{players_data}')

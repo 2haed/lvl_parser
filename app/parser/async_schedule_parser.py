@@ -59,6 +59,9 @@ async def main():
             'create unique index IF NOT EXISTS schedule_date_time_host_guest_location_uindex '
             'on schedule (start_time, end_time, host, guest, location); '
         )
+        await connection.fetch(
+                "update players set skill_level = 'КМС' where skill_level = 'К'"
+        )
     connector = aiohttp.TCPConnector(limit=50)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []

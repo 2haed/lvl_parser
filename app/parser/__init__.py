@@ -10,8 +10,8 @@ from async_team_members_parser import main as team_members_main
 
 async def start_parsing():
     await team_stat_main()
-    await schedule_main()
     await team_members_main()
+    await schedule_main()
 
 
 if __name__ == '__main__':

@@ -15,6 +15,8 @@ soup = BeautifulSoup(page.content, 'html.parser')
 tables = soup.find_all('table')[4]
 table = tables.find_all('table')[7]
 info = (' '.join(table.text.split()).split('Игрок'))
+if 'Тренер' in ' '.join(info):
+    info = ' '.join(table.text.split()).split('Тренерский')[0].split('Игрок')
 team_info = info[0]
 players = info[2:]
 nums = re.findall(r'\b\d+\b', team_info)
@@ -23,7 +25,6 @@ inf = {
     'Рост': nums[-3],
     'Возраст': f'{nums[-2]}.{nums[-1]}'
 }
-print(players)
 for i in players:
     player = {
         'Команда': ' '.join(team_info.split(':')[1].split()[:-1]),
@@ -35,4 +36,4 @@ for i in players:
     print(player)
 for k, v in inf.items():
     print(k, ':', type(v))
-print(float(inf['Возраст']))
+print(round(float(inf['Возраст'])))

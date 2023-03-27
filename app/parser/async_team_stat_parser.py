@@ -22,10 +22,10 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
             all_teams = []
             if 250 < len(row) < 400:
                 for i in range(14, 150, 14):
-                    if row[i + 1].text != 'Команда':
+                    if row[i + 1].text != 'Команда' and 'Круг' not in row[i + 1].text:
                         league = ' '.join(''.join(soup.find('h1').text.replace(':::', '').split('>')[3]).split())
                         team = {
-                            'team': row[i + 1].text,
+                            'team': row[i + 1].text.replace('турнирная таблица', ''),
                             'league': league if ":" not in league else league.split(':')[0],
                             'team_link': f"http://www.volleymsk.ru{row[i + 1].find('a').get('href')}" if row[
                                                                                                              i + 1].find(
@@ -43,24 +43,27 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
                             'balls': row[i + 12].text,
                             'balls_ratio': row[i + 13].text,
                         }
+                        # print(f'Лига: {team["league"]}, Команда: {team["team"]}')
                         all_teams.append(team)
-                    async with connection_pool.acquire() as connection:
-                        await connection.fetch(
-                            'insert into public.team_stat(team, league, team_link, victories, max_victories, points, '
-                            'handicap, three_zero_three_one, three_two, two_three, '
-                            'one_three_zero_three, match_points, match_ratio, balls,'
-                            'balls_ratio) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, '
-                            '$11, $12, $13, $14, $15) on conflict (team) do update set '
-                            'team = excluded.team', team['team'], team['league'], team['team_link'],
-                            int(team['victories']),
-                            int(team['max_victories']), int(team['points']), team['handicap'],
-                            int(team['three_zero_three_one']),
-                            int(team['three_two']), int(team['two_three']),
-                            int(team['one_three_zero_three']), team['match_points'], team['match_ratio'],
-                            team['balls'], team['balls_ratio']
-                        )
+                        async with connection_pool.acquire() as connection:
+                            await connection.fetch(
+                                'insert into public.team_stat(team, league, team_link, victories, max_victories, points, '
+                                'handicap, three_zero_three_one, three_two, two_three, '
+                                'one_three_zero_three, match_points, match_ratio, balls,'
+                                'balls_ratio) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, '
+                                '$11, $12, $13, $14, $15) on conflict (team) do update set '
+                                'team = excluded.team', team['team'], team['league'], team['team_link'],
+                                int(team['victories']),
+                                int(team['max_victories']), int(team['points']), team['handicap'],
+                                int(team['three_zero_three_one']),
+                                int(team['three_two']), int(team['two_three']),
+                                int(team['one_three_zero_three']), team['match_points'], team['match_ratio'],
+                                team['balls'], team['balls_ratio']
+                            )
+                        print(team['team'], team['league'], 'is added')
         except Exception as ex:
             logging.error(ex)
+            print(ex)
 
 
 async def main():
@@ -72,8 +75,8 @@ async def main():
     )
     async with connection_pool.acquire() as connection:
         await connection.fetch(
-            'create table IF NOT EXISTS public.team_stat (team_id serial not null , team text not null, league text, '
-            'team_link text not null , victories int,'
+            'create table IF NOT EXISTS public.team_stat (team_id serial, team text not null, league text, '
+            'team_link text, victories int,'
             'max_victories int, points int, handicap text, three_zero_three_one int, three_two int, two_three int,'
             'one_three_zero_three '
             'int, match_points text, '
@@ -81,7 +84,7 @@ async def main():
     connector = aiohttp.TCPConnector(limit=50, force_close=True)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []
-        for index, page_num in enumerate(range(1367, 1401)):
+        for index, page_num in enumerate(range(1300, 1401)):
             new_headers = copy.deepcopy(HEADERS)
             new_headers['user-agent'] = MOBILE_USER_AGENTS[index % 10]
             URL = f'http://www.volleymsk.ru/ap/trntable.php?trn={page_num}'
