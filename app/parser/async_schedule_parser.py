@@ -62,6 +62,12 @@ async def main():
         await connection.fetch(
                 "update players set skill_level = 'КМС' where skill_level = 'К'"
         )
+        await connection.fetch(
+            "update players set skill_level = 'ЗМС' where skill_level = 'З'"
+        )
+        await connection.fetch(
+            "update players set skill_level = 'МС' where skill_level = 'М'"
+        )
     connector = aiohttp.TCPConnector(limit=50)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []
