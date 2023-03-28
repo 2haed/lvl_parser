@@ -37,7 +37,7 @@ async def get_league_teams(call: types.CallbackQuery, callback_data: LeagueData,
 async def get_whole_team_list(message: types.Message, conn: Connection):
     res = await conn.fetch("select team_id, team from team_stat order by 2")
     builder = InlineKeyboardBuilder()
-    for team in res:
+    for team in sorted(res):
         builder.add(types.InlineKeyboardButton(
             text=team[1],
             callback_data=TeamData(team_id=int(team[0])).pack()))
@@ -145,10 +145,10 @@ async def get_league_teams(call: types.CallbackQuery, callback_data: CommandData
     if 'NULL' not in ' '.join(res[0]):
         players_data = f'\n{30 * "-"}\n'.join(
             f'Имя: {hbold(game[0])}\nРост: {hbold(game[1])}'
-            f'\nМастерство: {hbold("КМС" if game[2] == "К" else game[2])}\nГод рождения: {hbold(game[3])}'
+            f'\nМастерство: {hbold(game[2])}\nГод рождения: {hbold(game[3])}'
             for game in res)
     else:
         players_data = f'\n{30 * "-"}\n'.join(
-            f'Имя: {hbold(game[0])}\nРост: {hbold(game[1])}\nМастерство: {hbold("КМС" if game[2] == "К" else game[2])}'
+            f'Имя: {hbold(game[0])}\nРост: {hbold(game[1])}\nМастерство: {hbold(game[2])}'
             for game in res)
     await call.message.answer(text=f'Состав команды:\n{players_data}')

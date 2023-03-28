@@ -14,9 +14,14 @@ async def start_parsing():
     await schedule_main()
 
 
+# Working scheduler every 1 hour
+# if __name__ == '__main__':
+#     aioschedule.every(1).hours.do(start_parsing)
+#     loop = asyncio.get_event_loop()
+#     while True:
+#         loop.run_until_complete(aioschedule.run_pending())
+#         time.sleep(0.1)
+
 if __name__ == '__main__':
-    aioschedule.every(1).hours.do(start_parsing)
     loop = asyncio.get_event_loop()
-    while True:
-        loop.run_until_complete(aioschedule.run_pending())
-        time.sleep(0.1)
+    loop.run_until_complete(start_parsing())

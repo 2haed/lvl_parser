@@ -19,51 +19,53 @@ async def get_page_data(session: aiohttp.ClientSession, URL: str, connection_poo
         try:
             soup = BeautifulSoup(await response.text(), 'html.parser')
             row = soup.find_all('td', class_='normaltext')
-            all_teams = []
-            if 250 < len(row) < 400:
-                for i in range(14, 150, 14):
-                    if row[i + 1].text != 'Команда' and 'Круг' not in row[i + 1].text:
-                        league = ' '.join(''.join(soup.find('h1').text.replace(':::', '').split('>')[3]).split())
-                        team = {
-                            'team': row[i + 1].text.replace('турнирная таблица', ''),
-                            'league': league if ":" not in league else league.split(':')[0],
-                            'team_link': f"http://www.volleymsk.ru{row[i + 1].find('a').get('href')}" if row[
-                                                                                                             i + 1].find(
-                                'a') is not None else None,
-                            'victories': row[i + 2].text,
-                            'max_victories': row[i + 3].text,
-                            'points': row[i + 4].text,
-                            'handicap': row[i + 5].text,
-                            'three_zero_three_one': row[i + 6].text,
-                            'three_two': row[i + 7].text,
-                            'two_three': row[i + 8].text,
-                            'one_three_zero_three': row[i + 9].text,
-                            'match_points': row[i + 10].text,
-                            'match_ratio': row[i + 11].text,
-                            'balls': row[i + 12].text,
-                            'balls_ratio': row[i + 13].text,
-                        }
-                        # print(f'Лига: {team["league"]}, Команда: {team["team"]}')
-                        all_teams.append(team)
-                        async with connection_pool.acquire() as connection:
-                            await connection.fetch(
-                                'insert into public.team_stat(team, league, team_link, victories, max_victories, points, '
-                                'handicap, three_zero_three_one, three_two, two_three, '
-                                'one_three_zero_three, match_points, match_ratio, balls,'
-                                'balls_ratio) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, '
-                                '$11, $12, $13, $14, $15) on conflict (team) do update set '
-                                'team = excluded.team', team['team'], team['league'], team['team_link'],
-                                int(team['victories']),
-                                int(team['max_victories']), int(team['points']), team['handicap'],
-                                int(team['three_zero_three_one']),
-                                int(team['three_two']), int(team['two_three']),
-                                int(team['one_three_zero_three']), team['match_points'], team['match_ratio'],
-                                team['balls'], team['balls_ratio']
-                            )
-                        print(team['team'], team['league'], 'is added')
+            if len(soup.find_all('table')) < 110:
+                all_teams = []
+                if 250 < len(row) < 400:
+                    for i in range(14, 150, 14):
+                        if 'ДЛВЛ' not in soup.find('h1').text:
+                            if row[i + 1].text != 'Команда' or 'Круг' not in row[i + 1].text:
+                                league = ' '.join(''.join(soup.find('h1').text.replace(':::', '').split('>')[3]).split())
+                                team = {
+                                    'team': row[i + 1].text.replace('турнирная таблица', ''),
+                                    'league': league if ":" not in league else league.split(':')[0],
+                                    'team_link': f"http://www.volleymsk.ru{row[i + 1].find('a').get('href')}" if row[
+                                                                                                                     i + 1].find(
+                                        'a') is not None else None,
+                                    'victories': row[i + 2].text,
+                                    'max_victories': row[i + 3].text,
+                                    'points': row[i + 4].text,
+                                    'handicap': row[i + 5].text,
+                                    'three_zero_three_one': row[i + 6].text,
+                                    'three_two': row[i + 7].text,
+                                    'two_three': row[i + 8].text,
+                                    'one_three_zero_three': row[i + 9].text,
+                                    'match_points': row[i + 10].text,
+                                    'match_ratio': row[i + 11].text,
+                                    'balls': row[i + 12].text,
+                                    'balls_ratio': row[i + 13].text,
+                                }
+                                # print(f'Лига: {team["league"]}, Команда: {team["team"]}')
+                                all_teams.append(team)
+                                async with connection_pool.acquire() as connection:
+                                    await connection.fetch(
+                                        'insert into public.team_stat(team, league, team_link, victories, max_victories, points, '
+                                        'handicap, three_zero_three_one, three_two, two_three, '
+                                        'one_three_zero_three, match_points, match_ratio, balls,'
+                                        'balls_ratio) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, '
+                                        '$11, $12, $13, $14, $15) on conflict (team) do update set '
+                                        'team = excluded.team', team['team'], team['league'], team['team_link'],
+                                        int(team['victories']),
+                                        int(team['max_victories']), int(team['points']), team['handicap'],
+                                        int(team['three_zero_three_one']),
+                                        int(team['three_two']), int(team['two_three']),
+                                        int(team['one_three_zero_three']), team['match_points'], team['match_ratio'],
+                                        team['balls'], team['balls_ratio']
+                                    )
+                        # print(team['team'], team['league'], 'is added')
         except Exception as ex:
             logging.error(ex)
-            print(ex)
+            print(URL, ':', ex)
 
 
 async def main():
@@ -84,7 +86,7 @@ async def main():
     connector = aiohttp.TCPConnector(limit=50, force_close=True)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []
-        for index, page_num in enumerate(range(1300, 1401)):
+        for index, page_num in enumerate(range(1367, 1401)):
             new_headers = copy.deepcopy(HEADERS)
             new_headers['user-agent'] = MOBILE_USER_AGENTS[index % 10]
             URL = f'http://www.volleymsk.ru/ap/trntable.php?trn={page_num}'
